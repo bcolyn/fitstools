@@ -33,8 +33,8 @@ class Reporter(BaseReporter):
         print("Unknown masters remaining:", sum(map(lambda kv: kv[1], self.__unknown_counts.items())))
         print("Top unknown masters:")
         unknowns = sorted(self.__unknown_counts.items(), key=lambda kv: (kv[1], kv[0]), reverse=True)
-        top5 = unknowns[0:5]
-        for (key, value) in top5:
+        topN = unknowns[0:10]
+        for (key, value) in topN:
             print("\t".join([str(value), key, self.__unknown_locations[key]]))
 
 
