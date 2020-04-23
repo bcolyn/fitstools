@@ -20,7 +20,7 @@ class ReportLine:
 
     def to_str(self):
         return "\t".join(
-            [self.name, self.ra, self.dec, str(self.orientation), self.filter, str(self.focal_length), "", "", "",
+            [self.name, self.filter, self.ra, self.dec, str(self.orientation), str(self.focal_length), "", "", "",
              str(self.exposure)])
 
 
