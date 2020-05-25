@@ -3,9 +3,9 @@ import os
 
 from astropy import units as u
 from os.path import expanduser
-from astropy.io import fits
 from astropy.coordinates import SkyCoord
-from astropy.io.fits import VerifyError, Header, Card
+
+from src.fitstools import read_headers, try_header, is_fits
 
 
 class ReportLine:
@@ -49,7 +49,7 @@ def summarize_dir(dir: str):
         filename = os.fsdecode(file)
         if dir.lower().endswith("bad") or filename.lower().startswith("bad"):
             continue
-        if filename.lower().endswith(".fit") or filename.lower().endswith(".fits"):
+        if is_fits(filename):
             print("file:" + filename)
             headers = read_headers(os.path.join(dir, filename))
             if "light" in try_header(headers, "IMAGETYP").lower():
@@ -69,18 +69,6 @@ def summarize_dir(dir: str):
 
 def make_coord(dec, ra):
     return SkyCoord(ra, dec, unit=(u.hourangle, u.deg)) if ra is not None and dec is not None else None
-
-
-def try_header(headers: Header, *fieldnames):
-    for fieldname in fieldnames:
-        if fieldname in headers:
-            try:
-                return headers[fieldname]
-            except VerifyError:
-                card: Card = headers.cards[fieldname]
-                card._image = card._image.replace('\t', ' ') # tabs, even if non-printable, are common in my FITS files
-                return card.value
-    return None
 
 
 def format_ra(coord):
@@ -103,11 +91,6 @@ def format_orientation(angle):
         return 90
     else:
         return angle
-
-
-def read_headers(file):
-    with fits.open(file) as hdul:
-        return hdul[0].header  # support more than 1 HDU?
 
 
 def print_report(report):
