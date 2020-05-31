@@ -130,7 +130,7 @@ class BaseReporter:
 
 
 def read_headers(file):
-    with fits.open(file) as hdul:
+    with fits.open(file, mode='readonly') as hdul:
         return hdul[0].header  # support more than 1 HDU?
 
 

@@ -14,6 +14,7 @@ from os import DirEntry
 from pathlib import Path
 from typing import Dict, List, Sequence
 
+from astropy.io.fits import HDUList, Header, Card, VerifyError
 from logzero import logger
 
 from src.creators import Creator
@@ -21,9 +22,7 @@ from src.fitstools import read_headers, gather_files, is_fits, sha1sum, marked_b
 
 
 def main(args):
-    roots = ["D:\\Dropbox\\Astro\\Deep Sky\\RAW\\ZWO_ASI294MC\\2019-02-20",
-             "D:\\Dropbox\\Astro\\Deep Sky\\RAW\\ZWO_ASI183MM\\2019-11-20",
-             "D:\\Dropbox\\Astro\\Deep Sky\\RAW\\ZWO_ASI183MC\\2020-03-16"]
+    roots = ["D:\\Dropbox\\Astro\\Deep Sky\\RAW", "E:\\Astro_Archief\\Deep Sky\\ZWO_ASI294MC_Pro"]
     for root in roots:
         gather_files(process_files, root,
                      file_filter=lambda x: is_fits(x) and not marked_bad(x),
@@ -60,6 +59,21 @@ def write_csv(data: List[Dict], dir):
         writer.writerows(data)
 
 
+def safe_dict(headers: Header):
+    result = {}
+    for key in headers.keys():
+        card: Card = headers.cards[key]
+        try:
+            result[key] = card.value
+        except VerifyError as ve:
+            if key == "OBJECT":
+                card._image = card._image.replace('\t', ' ')  # tabs, even if non-printable, are common in my FITS files
+                result[key] = card.value
+            else:
+                raise ve
+    return result
+
+
 def process_files_throwing(files: Sequence[DirEntry]):
     parent = Path(files[0].path).parent
     logger.info("Folder: " + str(parent))
@@ -69,7 +83,7 @@ def process_files_throwing(files: Sequence[DirEntry]):
     file: DirEntry
     for file in files:
         logger.info(file.path)
-        headers = dict(read_headers(file.path))
+        headers = safe_dict(read_headers(file.path))
         sanity_check(headers)
         row = {"FILENAME": file.name, "FILESHA1": sha1sum(file)}
         row.update(headers)
