@@ -9,15 +9,13 @@ __license__ = "GPLv3"
 
 import argparse
 import csv
-
 from os import DirEntry
 from pathlib import Path
 from typing import Dict, List, Sequence
 
-from astropy.io.fits import HDUList, Header, Card, VerifyError
+from astropy.io.fits import Header, Card, VerifyError
 from logzero import logger
 
-from src.creators import Creator
 from src.fitstools import read_headers, gather_files, is_fits, sha1sum, marked_bad
 
 
@@ -59,7 +57,7 @@ def write_csv(data: List[Dict], dir):
         writer.writerows(data)
 
 
-def safe_dict(headers: Header):
+def safe_dict(headers: Header) -> Dict[str, str]:
     result = {}
     for key in headers.keys():
         card: Card = headers.cards[key]
@@ -84,15 +82,29 @@ def process_files_throwing(files: Sequence[DirEntry]):
     for file in files:
         logger.info(file.path)
         headers = safe_dict(read_headers(file.path))
-        sanity_check(headers)
+        sanity_check(headers, file)
         row = {"FILENAME": file.name, "FILESHA1": sha1sum(file)}
         row.update(headers)
         data.append(row)
     write_csv(data, parent)
 
 
-def sanity_check(headers):
-    Creator.find_creator(headers).support().check_sanity(headers)
+def is_light_sub(headers):
+    return "IMAGETYP" in headers.keys() and "light" in headers["IMAGETYP"].lower()
+
+
+def needs_plate_solve(headers):
+    return False
+
+
+def run_astap(path):
+    pass
+
+
+def sanity_check(headers: Dict[str, str], file: DirEntry):
+    if is_light_sub(headers):
+        if needs_plate_solve(headers):
+            run_astap(file.path)
 
 
 def get_args():

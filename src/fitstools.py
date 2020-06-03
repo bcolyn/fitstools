@@ -1,42 +1,8 @@
 import hashlib
 import os
-from os.path import expanduser
 
-import yaml
 from astropy.io import fits
 from astropy.io.fits import Header, VerifyError, Card
-
-
-class Config:
-    class Obj(object):
-        def __init__(self, d):
-            for a, b in d.items():
-                if isinstance(b, (list, tuple)):
-                    setattr(self, a, [Config.Obj(x) if isinstance(x, dict) else x for x in b])
-                else:
-                    setattr(self, a, Config.Obj(b) if isinstance(b, dict) else b)
-
-    @staticmethod
-    def __defaults():
-        return {
-            "test": "foo",
-            "masters": {
-                "test": 2
-            }
-        }
-
-    def __init__(self):
-        data = self.__defaults()
-        home = expanduser("~")
-        conf_file = os.sep.join([home, ".fitstools.yaml"])
-        if os.path.isfile(conf_file):
-            with open(conf_file, 'r') as stream:
-                try:
-                    yml = yaml.safe_load(stream)
-                    data.update(yml)
-                    self.data = Config.Obj(data)
-                except yaml.YAMLError as exc:
-                    raise exc
 
 
 # deprecated
@@ -129,7 +95,7 @@ class BaseReporter:
             self.__dots = 0
 
 
-def read_headers(file):
+def read_headers(file: object) -> Header:
     with fits.open(file, mode='readonly') as hdul:
         return hdul[0].header  # support more than 1 HDU?
 
