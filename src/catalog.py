@@ -1,28 +1,24 @@
 import csv
-from typing import *
-from typing import List, Any
-
-import astropy.io.fits as fits
-import astropy.wcs as wcs
-import numpy as np
-import astropy.units as u
 import os
+from pathlib import Path
+from typing import *
 
-from logzero import logger
-
+import astropy.units as u
+import astropy.wcs as wcs
 from astropy.coordinates import SkyCoord
 from astropy.io.fits import Header
+from astropy.wcs.utils import pixel_to_skycoord
+from astropy_healpix import HEALPix
+from logzero import logger
+
+from src.image import ImageMeta
 
 
 class Entry:
-    def __init__(self, c: SkyCoord, name: str):
-        self.coord = c
+    def __init__(self, ra, dec, name: str):
+        self.ra = ra
+        self.dec = dec
         self.name = name
-
-    @classmethod
-    def from_ra_dec(ra, dec, name):
-        coord = SkyCoord(ra=ra * u.hour, dec=dec * u.deg)
-        return Entry(coord, name)
 
     def __str__(self):
         return self.name
@@ -32,17 +28,41 @@ class Entry:
 
 
 class Catalogs:
-    _catalog: List[Entry]
+    _catalog: Dict[int, List[Entry]]
 
     def __init__(self) -> None:
         super().__init__()
-        self._catalog = []
-        self.load_data()
+        self._catalog = {}
+        self.hp = HEALPix(nside=16, frame='icrs')
+        self._cache_file = Path("~/fitstools.cache").expanduser()
+        self._load_data()
 
-    def add_to_catalog(self, entry):
-        self._catalog.append(entry)
+    def find_objects(self, header: Header):
+        world = wcs.WCS(header)
+        result = []
+        cx, cy = ImageMeta.from_fits(header).center()
+        center_coord = pixel_to_skycoord(cx, cy, world, 1)
+        footprint = world.calc_footprint().tolist()
 
-    def load_csv(self, file):
+        logger.info("searching catalog")
+        corners = map(lambda t: SkyCoord(t[0], t[1], unit=world.world_axis_units), footprint)
+        dist_corners = map(lambda x: center_coord.separation(x), corners)
+        radius = max(dist_corners)
+        hp_pix = self.hp.cone_search_skycoord(center_coord, radius=radius)
+        keys = map(str, hp_pix)
+        for pix in keys:
+            if pix in self._catalog:
+                for obj in self._catalog[pix]:
+                    res = world.footprint_contains(SkyCoord(obj.ra, obj.dec))
+                    if res:
+                        result.append(obj)
+        logger.info("returning " + str(result))
+        return result
+
+    def _cache_exists(self):
+        return self._cache_file.exists()
+
+    def _load_csv(self, file, catalog: Dict):
         with open(file, newline='', encoding="utf-8") as fh:
             fh.readline()  # skip first line
             fh.readline()  # skip 2nd line
@@ -52,35 +72,40 @@ class Catalogs:
                     continue
                 ra_deg = (float(line[0]) / (864000 / 360)) * u.deg
                 dec_deg = (float(line[1]) / (324000 / 90)) * u.deg
-                coord = SkyCoord(ra_deg, dec_deg)
-                self.add_to_catalog(Entry(coord, line[2]))
+                entry = Entry(ra_deg, dec_deg, line[2])
+                pix = str(self.hp.lonlat_to_healpix(ra_deg, dec_deg))
+                lst = catalog[pix] if pix in catalog else []
+                lst.append(entry)
+                catalog[pix] = lst
 
-    def load_data(self):
-        our_path = os.path.dirname(__file__)
-        deep_sky_file = os.path.join(our_path, "../data/deep_sky.csv")
-        hyperleda_file = os.path.join(our_path, "../data/hyperleda.csv")
-        logger.info("loading deep sky catalog")
-        self.load_csv(deep_sky_file)
+    def _load_data(self):
+        logger.info("loading cache")
+        #self._catalog = shelve.open(str(self._cache_file), writeback=True)
+        self._catalog = {}
+        if len(self._catalog.keys()) != 0:
+            logger.info("done loading cache")
+            return
+        else:
+            tmp = {}
+            our_path = os.path.dirname(__file__)
+            self._load_deep_sky(our_path, tmp)
+            self._load_hyperleda(our_path, tmp)
+            logger.info("done loading catalogs")
+            logger.info("saving cache")
+            self._catalog.update(tmp)
+            #self._catalog.sync()
+            logger.info("done saving cache")
+
+    def _load_hyperleda(self, our_path, tmp):
         logger.info("loading hyperleda catalog")
-        self.load_csv(hyperleda_file)
-        logger.info("done loading catalogs")
+        hyperleda_file = os.path.join(our_path, "../data/hyperleda.csv")
+        self._load_csv(hyperleda_file, tmp)
 
-    def find_objects(self, header: Header):
-        tmp = wcs.WCS(header)
-        print(tmp.calc_footprint())
-        result = []
-        logger.info("searching catalog")
-        for obj in self._catalog:
-            res = tmp.footprint_contains(obj.coord)
-            if res:
-                result.append(obj)
-        logger.info("returning " + str(result))
-        return result
+    def _load_deep_sky(self, our_path, tmp):
+        logger.info("loading deep sky catalog")
+        deep_sky_file = os.path.join(our_path, "../data/deep_sky.csv")
+        self._load_csv(deep_sky_file, tmp)
 
-    # def find_objects(self, header: Header):
-    #   tmp = wcs.WCS(header)
-    #   wcs.
-    #   https: // docs.astropy.org / en / stable / coordinates / matchsep.html  # searching-around-coordinates
-    # tmp = wcs.WCS(header)
-    # return tmp.all_world2pix(self.catalog, 0)
-    # return tmp.all_world2pix([1,2,3], [1,1,1], 1, ra_dec_order=True)
+    def close(self):
+        pass
+        #self._catalog.close()
