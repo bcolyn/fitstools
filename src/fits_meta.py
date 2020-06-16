@@ -94,11 +94,15 @@ def is_light_sub(headers):
 
 
 def needs_plate_solve(headers):
-    return False
+    return not has_coordinates(headers)
+
+
+def has_coordinates(headers):
+    return "OBJCTRA" in headers or "RA" in headers
 
 
 def run_astap(path):
-    pass
+    raise Exception("not implemented")
 
 
 def sanity_check(headers: Dict[str, str], file: DirEntry):

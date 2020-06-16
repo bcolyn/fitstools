@@ -100,13 +100,26 @@ def read_headers(file: object) -> Header:
         return hdul[0].header  # support more than 1 HDU?
 
 
-def try_header(headers: Header, *fieldnames):
+def find_header(headers: Header, *fieldnames):
+    card = find_header_card(headers, *fieldnames)
+    if card is None:
+        return None
+    return card.value
+
+
+def find_header_card(headers: Header, *fieldnames):
     for fieldname in fieldnames:
         if fieldname in headers:
-            try:
-                return headers[fieldname]
-            except VerifyError:
-                card: Card = headers.cards[fieldname]
-                card._image = card._image.replace('\t', ' ')  # tabs, even if non-printable, are common in my FITS files
-                return card.value
+            return headers.cards[fieldname]
     return None
+
+
+def try_header(headers: Header, *fieldnames):
+    card = find_header_card(headers, *fieldnames)
+    if card is None:
+        return None
+    try:
+        return card.value
+    except VerifyError:
+        card._image = card._image.replace('\t', ' ')  # tabs, even if non-printable, are common in my FITS files
+        return card.value

@@ -1,15 +1,16 @@
 import csv
 import os
 
+import numpy as np
 import pandas
 import pytest
 from astropy import units as u
 from astropy import wcs
-from astropy.coordinates import ICRS, SkyCoord
+from astropy.coordinates import ICRS
 from astropy.io import fits
 from astropy_healpix import HEALPix
 from logzero import logger
-import numpy as np
+
 from src.catalog import Catalogs
 from src.fitstools import read_headers
 
@@ -60,8 +61,7 @@ def test_pandas_reader():
 @pytest.fixture()
 def catalog():
     catalog = Catalogs()
-    yield catalog
-    catalog.close()
+    return catalog
 
 
 def test_find_objects(catalog):
