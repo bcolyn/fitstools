@@ -2,7 +2,8 @@ from pathlib import Path
 
 from astropy.io.fits import Header
 
-from src.platesolve import ASTAPSolver, create_hint, SolverError, SolverFailure, extract_hint
+from src.fitstools.platesolve import ASTAPSolver, create_hint, SolverError, SolverFailure, extract_hint
+
 import pytest
 
 

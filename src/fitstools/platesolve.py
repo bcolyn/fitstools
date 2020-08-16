@@ -6,12 +6,12 @@ from pathlib import Path
 
 from astropy.io.fits import Header
 
-from src.fitstools import find_header
-
+from .fitstools import find_header
 
 class ASTAPSolver:
     _tmp_dir: Path
     _exe: str
+    _log: bool
 
     def __init__(self, exe="astap"):
         self._exe = exe
