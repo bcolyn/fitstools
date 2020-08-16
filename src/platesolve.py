@@ -26,7 +26,7 @@ class ASTAPSolver:
         ini = output_file.with_suffix(".ini")
         log = output_file.with_suffix(".log")
         try:
-            params = [self._exe, "-f", str(image_file), "-o", str(output_file), "-r", "180"]
+            params = [self._exe, "-f", str(image_file), "-o", str(output_file), "-r", "180", "-s", "100"]
             if hint is not None:
                 params.extend(hint)
             if self._log:
@@ -65,16 +65,31 @@ class ASTAPSolver:
         return Header.fromtextfile(wcs_file, endcard=False)
 
 
-def create_hint(ra, dec):
-    ra_str = str(ra / 15)
-    spd_str = str(90 + dec)
-    return ["-ra", ra_str, "-spd", spd_str]
+def create_hint(ra, dec, radius=None):
+    hint = []
+    if ra is not None and dec is not None:
+        ra_str = str(ra / 15)
+        spd_str = str(90 + dec)
+        hint.extend(["-ra", ra_str, "-spd", spd_str])
+    if radius:
+        hint.extend(["-fov", str(radius)])
+    return hint
 
 
 def extract_hint(header: Header):
     ra = find_header(header, "RA", "CRVAL1")
     dec = find_header(header, "DEC", "CRVAL2")
-    return create_hint(ra, dec)
+    scale = find_header(header, "SCALE", "PIXSCALE")
+    if scale is None:
+        focallen = find_header(header, "FOCALLEN")
+        pixsize = find_header(header, "YPIXSZ")
+        scale = 206.265 * float(pixsize) / float(focallen)
+    height = find_header(header, "NAXIS2")
+    if scale is not None and height is not None:
+        radius = height * scale / 3600
+    else:
+        radius = None
+    return create_hint(ra, dec, radius)
 
 
 class SolverError(Exception):
