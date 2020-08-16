@@ -17,8 +17,6 @@ class ASTAPSolver:
         self._exe = exe
         self._tmp_dir = tempfile.gettempdir()
         self._log = True
-        self._last_ra: 0  # keep track of the last solution, likely
-        self._last_dec: 0
 
     def solve(self, image_file: Path, hint=None) -> Header:
         if not image_file.is_file():
@@ -58,10 +56,9 @@ class ASTAPSolver:
             if self._log:
                 try:
                     with open(log_file) as logstream:
-                        log = logstream.read()
+                        log = logstream.readlines()
                 except:
                     pass
-
             raise SolverFailure("Failed to solve image " + str(image_file), log)
 
     def _read_wcs(self, wcs_file):
