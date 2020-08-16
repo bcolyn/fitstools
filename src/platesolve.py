@@ -12,12 +12,13 @@ from src.fitstools import find_header
 class ASTAPSolver:
     _tmp_dir: Path
     _exe: str
-    _last_ra: 0  # keep track of the last solution, likely
-    _last_dec: 0
 
     def __init__(self, exe="astap"):
         self._exe = exe
         self._tmp_dir = tempfile.gettempdir()
+        self._log = True
+        self._last_ra: 0  # keep track of the last solution, likely
+        self._last_dec: 0
 
     def solve(self, image_file: Path, hint=None) -> Header:
         if not image_file.is_file():
@@ -25,38 +26,72 @@ class ASTAPSolver:
         output_file = Path(self._tmp_dir, image_file.name)
         wcs = output_file.with_suffix(".wcs")
         ini = output_file.with_suffix(".ini")
+        log = output_file.with_suffix(".log")
         try:
             params = [self._exe, "-f", str(image_file), "-o", str(output_file), "-r", "180"]
             if hint is not None:
                 params.extend(hint)
+            if self._log:
+                params.append("-log")
 
             subprocess.run(params)
             if not wcs.exists() and ini.exists():
-                error_msg: str = self._read_error(ini)
-                if error_msg:
-                    raise Exception(error_msg)
+                self._raise_error(ini, log, image_file)
             return self._read_wcs(wcs)
         finally:
             if wcs.exists():
                 wcs.unlink()
             if ini.exists():
                 ini.unlink()
+            if log.exists():
+                log.unlink()
 
-    def extract_hint(self, header: Header):
-        ra = find_header(header, "RA", "CRVAL1")
-        dec = find_header(header, "DEC", "CRVAL2")
-        ra_str = str(ra / 15)
-        spd_str = str(90 + dec)
-        return ["-ra", ra_str, "-spd", spd_str]
+    def _raise_error(self, ini_file, log_file, image_file):
+        parser = configparser.ConfigParser()
+        with open(ini_file) as stream:
+            parser.read_string("[top]\n" + stream.read())
+        plain_ini = parser["top"]
+        if "ERROR" in plain_ini:
+            raise SolverError(plain_ini["ERROR"])
+        else:
+            log = None
+            if self._log:
+                try:
+                    with open(log_file) as logstream:
+                        log = logstream.read()
+                except:
+                    pass
+
+            raise SolverFailure("Failed to solve image " + str(image_file), log)
 
     def _read_wcs(self, wcs_file):
         return Header.fromtextfile(wcs_file, endcard=False)
 
-    def _read_error(self, ini) -> str:
-        parser = configparser.ConfigParser()
-        with open(ini) as stream:
-            parser.read_string("[top]\n" + stream.read())
-        return parser["top"]["ERROR"]
+
+def create_hint(ra, dec):
+    ra_str = str(ra / 15)
+    spd_str = str(90 + dec)
+    return ["-ra", ra_str, "-spd", spd_str]
+
+
+def extract_hint(header: Header):
+    ra = find_header(header, "RA", "CRVAL1")
+    dec = find_header(header, "DEC", "CRVAL2")
+    return create_hint(ra, dec)
+
+
+class SolverError(Exception):
+    pass
+
+
+class SolverFailure(Exception):
+
+    def __init__(self, message, log) -> None:
+        self.message = message
+        self.log = log
+
+    def __str__(self) -> str:
+        return self.message
 
 
 def main():
@@ -103,7 +138,7 @@ def main():
 
         try:
             headers = solver.solve(image, hint)
-            hint = solver.extract_hint(headers)
+            hint = extract_hint(headers)
             for header in headers:
                 print(header + "\t" + str(headers[header]))
         except Exception as ex:
