@@ -5,7 +5,7 @@ from pathlib import Path
 from astropy.io import fits
 from astropy.io.fits import HDUList
 
-from src.fitstools import is_fits
+from fitstools.util import is_fits
 
 
 def main():
@@ -15,6 +15,7 @@ def main():
     header = "OBJECT"
     value = "M57"
     main_args(dir, out, header, value)
+
 
 def list_dir(dir):
     return os.scandir(dir)

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import configparser
 import os
 
@@ -5,7 +6,7 @@ from astropy import units as u
 from os.path import expanduser
 from astropy.coordinates import SkyCoord
 
-from src.fitstools import read_headers, try_header, is_fits
+from fitstools.util import read_headers, try_header, is_fits
 
 
 class ReportLine:

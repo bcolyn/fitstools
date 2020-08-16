@@ -1,4 +1,4 @@
-from src.fitstools import marked_bad
+from src.fitstools.util import marked_bad
 
 
 def test_marked_bad():

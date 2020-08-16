@@ -16,7 +16,7 @@ from typing import Dict, List, Sequence
 from astropy.io.fits import Header, Card, VerifyError
 from logzero import logger
 
-from src.fitstools import read_headers, gather_files, is_fits, sha1sum, marked_bad
+from fitstools.util import read_headers, gather_files, is_fits, sha1sum, marked_bad
 
 
 def main(args):

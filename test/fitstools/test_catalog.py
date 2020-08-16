@@ -11,8 +11,8 @@ from astropy.io import fits
 from astropy_healpix import HEALPix
 from logzero import logger
 
-from src.catalog import Catalogs
-from src.fitstools import read_headers
+from src.fitstools.catalog import Catalogs
+from src.fitstools.util import read_headers
 
 our_path = os.path.dirname(__file__)
 deep_sky_file = os.path.join(our_path, "../data/deep_sky.csv")

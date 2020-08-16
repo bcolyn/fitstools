@@ -11,7 +11,7 @@ from astropy_healpix import HEALPix
 from logzero import logger
 from pandas.core.groupby import DataFrameGroupBy
 
-from src.image import ImageMeta
+from .image import ImageMeta
 
 
 class Entry:

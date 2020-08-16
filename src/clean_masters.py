@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from os import DirEntry
 
-from src.fitstools import walk_dir, sha1sum, is_master, BaseReporter
-from src.Config import Config
+from fitstools.util import walk_dir, sha1sum, is_master
+from fitstools.cli import Config, BaseReporter
 
 import os
 import functools

@@ -1,6 +1,6 @@
 import pytest
 
-from src.creators import *
+from src.fitstools.creators import *
 
 
 def test_find_sgp():

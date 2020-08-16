@@ -6,7 +6,7 @@ from pathlib import Path
 
 from astropy.io.fits import Header
 
-from .fitstools import find_header
+from .util import find_header
 
 class ASTAPSolver:
     _tmp_dir: Path

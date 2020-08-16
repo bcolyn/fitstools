@@ -71,28 +71,7 @@ def is_master(name: str):
             or name.startswith("MF-ISO"))
 
 
-def memoize(f):
-    memo = {}
 
-    def helper(x):
-        if x not in memo:
-            memo[x] = f(x)
-        return memo[x]
-
-    return helper
-
-
-class BaseReporter:
-    def __init__(self):
-        self.__dots = 0
-
-    def dot(self):
-        if self.__dots < 79:
-            print(".", end='')
-            self.__dots += 1
-        else:
-            print(".")
-            self.__dots = 0
 
 
 def read_headers(file: object) -> Header:

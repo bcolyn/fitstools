@@ -4,6 +4,19 @@ from os.path import expanduser
 import yaml
 
 
+class BaseReporter:
+    def __init__(self):
+        self.__dots = 0
+
+    def dot(self):
+        if self.__dots < 79:
+            print(".", end='')
+            self.__dots += 1
+        else:
+            print(".")
+            self.__dots = 0
+
+
 class Config:
     class Obj(object):
         def __init__(self, d):
