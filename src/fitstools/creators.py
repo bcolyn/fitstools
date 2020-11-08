@@ -3,10 +3,17 @@ from typing import Dict
 
 
 class FrameType(Enum):
+    UNKNOWN = auto()
     BIAS = auto()
     DARK = auto()
     FLAT = auto()
     LIGHT = auto()
+    BADPIXELMAP = auto()
+    MASTER_FLAT = auto()
+    MASTER_DARK = auto()
+    MASTER_DARKFLAT = auto()
+    MASTER_BIAS = auto()
+    INTEGRATION = auto()
 
 
 class Support(object):

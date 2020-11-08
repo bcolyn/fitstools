@@ -20,7 +20,10 @@ from fitstools.util import read_headers, gather_files, is_fits, sha1sum, marked_
 
 
 def main(args):
-    roots = ["D:\\Dropbox\\Astro\\Deep Sky\\RAW", "E:\\Astro_Archief\\Deep Sky\\ZWO_ASI294MC_Pro"]
+    roots = ["D:\\Dropbox\\Astro\\Deep Sky\\RAW",
+             r"E:\Astro_Archief\Deep Sky\Raw\ZWO_ASI294MC_Pro",
+             r"E:\Astro_Archief\Deep Sky\Raw\ZWO_ASI183MM_Pro"
+             ]
     for root in roots:
         gather_files(process_files, root,
                      file_filter=lambda x: is_fits(x) and not marked_bad(x),
