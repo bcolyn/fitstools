@@ -18,6 +18,8 @@ from astropy.stats import sigma_clipped_stats, gaussian_sigma_to_fwhm
 
 from photutils import *
 
+max_workers = 32
+
 
 def image_stats2(filename: Path):
     with fits.open(filename) as hdul:
@@ -39,48 +41,37 @@ def image_stats(filename: Path):
     log_info("type   = ", hdul[0].header["IMAGETYP"])
     log_info("gain   = ", hdul[0].header["GAIN"])
     log_info("offset = ", hdul[0].header["OFFSET"])
-    log_info("median = ", numpy.median(data))
-    log_info("avg    = ", numpy.average(data))
     log_info("min    = ", numpy.min(data))
     log_info("max    = ", numpy.max(data))
-
-    # peaks = find_peaks(data, threshold, npeaks=20, centroid_func=centroid_2dg)
-    # print(peaks)
     log_info("basic stats")
-    mean, median, std = sigma_clipped_stats(data, sigma=3.0)
-    # log_info("calculating background")
-    # sigma_clip = SigmaClip(sigma=3.)
-    # bkg_estimator = MedianBackground()  # SExtractorBackground()  #
-    # bkg = Background2D(data, (50, 50), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
-    # log_info("subtracting background")
-    # subtracted = data - bkg.background
-    subtracted = data
+    mean, median, std = sigma_clipped_stats(data, sigma=3.0, cenfunc=numpy.mean, stdfunc=numpy.std)
+    log_info("median = ", median)
+    log_info("avg    = ", mean)
+    log_info("subtracting background")
+    subtracted = data - median
+    background = numpy.zeros(data.shape) + median
     log_info("finding detection threshold")
-    # threshold = detect_threshold(subtracted, 3)
     threshold = median + 5 * std
     log_info("detecting sources")
     sources = detect_sources(subtracted, threshold, 8)
     log_info("sources found: ", sources.nlabels)
     log_info("measuring sources")
-    table = source_properties(subtracted, sources)  # background=median
-    # for row in table:
-    #     print("ecc    = ", row.eccentricity)
-    #     print("semi   = ",row.semimajor_axis_sigma)
-    #     print("fwhm   = ", 2.355 * row.semimajor_axis_sigma)
-    med_ecc = numpy.median(table.eccentricity)
+    props = source_properties(subtracted, sources, background=background)
+    table = props.to_table(['eccentricity', 'semimajor_axis_sigma', 'semiminor_axis_sigma'])
+    med_ecc = numpy.median(table['eccentricity'])
     log_info("ecc    = ", med_ecc)
-
-    fwhm_hi = table.semimajor_axis_sigma * gaussian_sigma_to_fwhm
-    fwhm_lo = table.semiminor_axis_sigma * gaussian_sigma_to_fwhm
-    med_fwhm: Quantity = numpy.median(fwhm_hi)  # + numpy.median(fwhm_lo)) / 2.0
-    min_fwhm: Quantity = numpy.median(fwhm_lo)
+    fwhm_hi = table['semimajor_axis_sigma']
+    fwhm_lo = table['semiminor_axis_sigma']
+    med_fwhm: Quantity = numpy.median(fwhm_hi) * gaussian_sigma_to_fwhm  # + numpy.median(fwhm_lo)) / 2.0
+    min_fwhm: Quantity = numpy.median(fwhm_lo) * gaussian_sigma_to_fwhm
     log_info("fwhm   = ", med_fwhm)
 
-    # daofind = DAOStarFinder(fwhm=med_fwhm.value, threshold=5. * std)
-    # sources = daofind(data - median)
-    # print(sources)
-
     return [filename.name, median, sources.nlabels, med_fwhm.value, med_ecc, min_fwhm.value]
+
+
+class FastBackground2D(Background2D):
+    def _calc_coordinates(self):
+        pass
 
 
 def log_info(*args):
@@ -88,15 +79,15 @@ def log_info(*args):
     logger.info("".join(args))
 
 
-def main3():
+def main1():
     filename = r"D:\Dropbox\Astro\Deep Sky\RAW\ZWO_ASI183MM\2020-01-15\Light\IC 405_2020-01-15T193701_60sec_OIII__-15C_frame8.fit"
     with fits.open(filename) as hdul:
         data = hdul[0].data
     sigma_clip = SigmaClip(sigma=3., maxiters=5)
-    bkg_estimator = SExtractorBackground()  # MedianBackground()
-    bkg = Background2D(data, (500, 500), filter_size=(30, 30), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+    bkg_estimator = MeanBackground()
+    bkg = FastBackground2D(data, (128, 128), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
     subtracted = data - bkg.background
-    print(numpy.median(subtracted))
+    print("median subtracted value " + str(numpy.median(subtracted)))
 
 
 def main2():
@@ -114,6 +105,21 @@ def main2():
         writer.writerows(data)
 
 
+def main3():
+    image_dir = r"D:\Dropbox\Astro\Deep Sky\RAW\ZWO_ASI183MM\2020-01-15\Light"
+    images = []
+    for f in os.scandir(image_dir):
+        image = Path(f)
+        if image.name.startswith("IC 405"):
+            images.append(image.resolve())
+    from concurrent.futures.thread import ThreadPoolExecutor
+    from concurrent.futures.process import ProcessPoolExecutor
+    # executor = ThreadPoolExecutor(max_workers=max_workers)
+    executor = ProcessPoolExecutor(max_workers=max_workers)
+    executor.map(image_stats, images)
+    executor.shutdown()
+
+
 def main():
     fits_image_filename = [
         #        r"D:\Dropbox\Astro\Calibration\ASI183MM Pro\Bias\gain111_-15\raw\Bias_2019-06-04T031420_0sec_None__-15C_frame12.fit",
@@ -125,11 +131,24 @@ def main():
 
 
 if __name__ == "__main__":
+    numpy.__config__.show()
     """ This is executed when run from the command line """
-    main2()
-    # import cProfile
-    # cProfile.run("main3()", "bgstats")
+    import time
 
+    start = time.time()
+    main3()
+    end = time.time()
+    print(end - start)
+    print("max workers = " + str(max_workers))
+
+    # import cProfile
+    #
+    # start = time.time()
+    # cProfile.run("main1()", "bgstats")
+    # end = time.time()
+    # print("time used: " + str(end - start))
+    #
     # import pstats
+    #
     # p = pstats.Stats('bgstats')
     # p.sort_stats('cumtime').print_stats()
