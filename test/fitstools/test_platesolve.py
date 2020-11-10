@@ -70,6 +70,6 @@ def test_nosolution():
 
 def solve_testFile(file, hint=None):
     solver = ASTAPSolver()
-    image_file = Path("../test-data", file)
+    image_file = Path("../../test-data", file)
     headers = solver.solve(image_file, hint)
     return headers
