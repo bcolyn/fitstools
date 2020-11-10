@@ -49,14 +49,14 @@ def image_stats(filename: Path):
     log_info("avg    = ", mean)
     log_info("subtracting background")
     subtracted = data - median
-    background = np.zeros(data.shape) + median
+    bkground = np.zeros(data.shape) + median
     log_info("finding detection threshold")
     threshold = median + 5 * std
     log_info("detecting sources")
     sources = detect_sources(subtracted, threshold, 8)
     log_info("sources found: ", sources.nlabels)
     log_info("measuring sources")
-    props = source_properties(subtracted, sources, background=background)
+    props = source_properties(subtracted, sources, background=bkground)
     table = props.to_table(['eccentricity', 'semimajor_axis_sigma', 'semiminor_axis_sigma'])
     med_ecc = np.median(table['eccentricity'])
     log_info("ecc    = ", med_ecc)
@@ -89,7 +89,8 @@ def log_info(*args):
 
 
 def main1():
-    filename = r"D:\Dropbox\Astro\Deep Sky\RAW\ZWO_ASI183MM\2020-01-15\Light\IC 405_2020-01-15T193701_60sec_OIII__-15C_frame8.fit"
+    filename = r"D:\Dropbox\Astro\Deep Sky\RAW\ZWO_ASI183MM\2020-01-15\Light\IC 405_2020-01-15T193701_60sec_OIII" \
+               r"__-15C_frame8.fit"
     import numpy
     with fits.open(filename) as hdul:
         data = hdul[0].data
@@ -117,9 +118,9 @@ def main2():
 
 def main3():
     images = list_images()
-    from concurrent.futures.thread import ThreadPoolExecutor
-    from concurrent.futures.process import ProcessPoolExecutor
+    # from concurrent.futures.thread import ThreadPoolExecutor
     # executor = ThreadPoolExecutor(max_workers=max_workers)
+    from concurrent.futures.process import ProcessPoolExecutor
     executor = ProcessPoolExecutor(max_workers=max_workers)
     results = executor.map(image_stats_mp, images)
     executor.shutdown()
@@ -146,9 +147,12 @@ def list_images():
 
 def main():
     fits_image_filename = [
-        #        r"D:\Dropbox\Astro\Calibration\ASI183MM Pro\Bias\gain111_-15\raw\Bias_2019-06-04T031420_0sec_None__-15C_frame12.fit",
-        #        r"E:\Astro_Archief\Calibration\ASI183MM Pro\2020-04-27\Dark\D183MM_2020-04-28T023615_60sec_None__-15C_frame218.fit",
-        r"D:\Dropbox\Astro\Deep Sky\RAW\ZWO_ASI183MM\2020-01-15\Light\IC 405_2020-01-15T193701_60sec_OIII__-15C_frame8.fit"
+        # r"D:\Dropbox\Astro\Calibration\ASI183MM Pro\Bias\gain111_-15\raw\Bias_2019-06-04T031420_0sec_None
+        # __-15C_frame12.fit",
+        # r"E:\Astro_Archief\Calibration\ASI183MM Pro\2020-04-27\Dark\D183MM_2020-04-28T023615_60sec_None
+        # __-15C_frame218.fit",
+        r"D:\Dropbox\Astro\Deep Sky\RAW\ZWO_ASI183MM\2020-01-15\Light\IC 405_2020-01-15T193701_60sec_OIII"
+        r"__-15C_frame8.fit"
     ]
     for file in fits_image_filename:
         image_stats(Path(file))
