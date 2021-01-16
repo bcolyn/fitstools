@@ -125,14 +125,14 @@ def test_wcs_sgp():
         print(rahmsstr + ' ' + decdmsstr)
 
 
-def ignore_sample():
+def test_sample():
     from matplotlib import pyplot as plt
     from astropy.io import fits
     from astropy.wcs import WCS
 
     # filename = get_pkg_data_filename('tutorials/FITS-images/HorseHead.fits')
     dir = "C:\\TEMP\\"
-    filename = dir + "M57_2020_05_30T025615_30sec_HaOIII_COLD_20C_frame78_RGB_VNG.fit"
+    filename = dir + "M57_2020_05_30T025615_30sec_HaOIII_COLD_20C_frame78_RGB_VNG_L.fit"
 
     hdu = fits.open(filename)[0]
     wcs = WCS(hdu.header).celestial

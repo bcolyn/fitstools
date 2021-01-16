@@ -1,2 +1,5 @@
 .idea/
+.pytest_cache/
 venv/
+output.csv
+bgstats
