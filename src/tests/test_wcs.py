@@ -70,12 +70,12 @@ def print_footprint(wcs):
 
 
 def resource_file(file):
-    return Path("../../test-data", file)
+    return Path("test-data", file)
 
 
 def solve_test_file(file, hint=None):
     solver = ASTAPSolver()
-    image_file = Path("../../test-data", file)
+    image_file = Path("test-data", file)
     headers = solver.solve(image_file, hint)
     return headers
 

@@ -15,8 +15,8 @@ from src.fitstools.catalog import Catalogs
 from src.fitstools.util import read_headers
 
 our_path = os.path.dirname(__file__)
-deep_sky_file = os.path.join(our_path, "../../data/deep_sky.csv")
-hyperleda_file = os.path.join(our_path, "../../data/hyperleda.csv")
+deep_sky_file = os.path.join(our_path, "../fitstools/data/deep_sky.csv")
+hyperleda_file = os.path.join(our_path, "../fitstools/data/hyperleda.csv")
 
 
 def test_csv_reader():

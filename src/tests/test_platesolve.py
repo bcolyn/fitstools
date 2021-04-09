@@ -1,10 +1,9 @@
 from pathlib import Path
 
+import pytest
 from astropy.io.fits import Header
 
 from src.fitstools.platesolve import ASTAPSolver, create_hint, SolverError, SolverFailure, extract_hint
-
-import pytest
 
 
 def test_solve_asi183mm():
@@ -70,6 +69,8 @@ def test_nosolution():
 
 def solve_testFile(file, hint=None):
     solver = ASTAPSolver()
-    image_file = Path("../../test-data", file)
+    root = Path(__file__).parent
+    image_file = Path(root, "test-data", file)
+    assert image_file.is_file()
     headers = solver.solve(image_file, hint)
     return headers

@@ -75,10 +75,10 @@ class Catalogs:
 
     def _load_hyperleda(self, our_path):
         logger.info("loading hyperleda catalog")
-        hyperleda_file = os.path.join(our_path, "../data/hyperleda.csv")
+        hyperleda_file = os.path.join(our_path, "data/hyperleda.csv")
         return self._load_csv(hyperleda_file)
 
     def _load_deep_sky(self, our_path, ):
         logger.info("loading deep sky catalog")
-        deep_sky_file = os.path.join(our_path, "../data/deep_sky.csv")
+        deep_sky_file = os.path.join(our_path, "data/deep_sky.csv")
         return self._load_csv(deep_sky_file)

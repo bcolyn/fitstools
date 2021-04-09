@@ -18,14 +18,28 @@ def auto_eq(cls):
     return cls
 
 
+def auto_init(cls):
+    def __init__(self, **kwargs):
+        for name in kwargs:
+            self.__setattr__(name, kwargs[name])
+
+    cls.__init__ = __init__
+    return cls
+
+
 @auto_str
 @auto_eq
+@auto_init
 class Root:
-    def __init__(self, id, name, path):
-        self.id = id
-        self.name = name
-        self.path = path
+    path: str
+    name: str
+    id: int
 
-    @staticmethod
-    def from_row(row):
-        return Root(row['id'], row['name'], row['path'])
+
+@auto_str
+@auto_eq
+@auto_init
+class File:
+    id: int
+    root: Root
+    path: str
