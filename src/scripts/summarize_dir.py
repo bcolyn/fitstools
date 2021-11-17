@@ -73,7 +73,7 @@ def make_coord(dec, ra):
 
 
 def format_ra(coord):
-    return coord.ra.to_string(unit=u.hour, sep=('h ', 'm ', 's'), precision=0, pad=True) if coord is not None else None
+    return coord.ra.to_string(unit=u.hour, sep=('h ', '\' ', '"'), precision=0, pad=True) if coord is not None else None
 
 
 def format_dec(coord):
