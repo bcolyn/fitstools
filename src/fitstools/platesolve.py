@@ -8,6 +8,7 @@ from astropy.io.fits import Header
 
 from .util import find_header
 
+
 class ASTAPSolver:
     _tmp_dir: Path
     _exe: str
