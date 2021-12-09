@@ -2,7 +2,7 @@ import hashlib
 import os
 
 from astropy.io import fits
-from astropy.io.fits import Header, VerifyError, Card
+from astropy.io.fits import Header, VerifyError
 
 
 # deprecated
@@ -23,21 +23,21 @@ def walk_dir(cb, start):
 
 
 def gather_files(cb, start, file_filter=lambda f: True, dir_filter=lambda d: True):
-    queue = [start]
-    while len(queue) > 0:
-        d = queue.pop()
+    dir_queue = [start]
+    while len(dir_queue) > 0:
+        queued_dir = dir_queue.pop()
         files = []
-        for f in os.scandir(d):
-            if f.is_dir():
-                if dir_filter(d):
-                    queue.append(f)
+        for entry in os.scandir(queued_dir):
+            if entry.is_dir():
+                if dir_filter(entry):
+                    dir_queue.append(entry)
                 else:
-                    pass
-            if f.is_file():
-                if file_filter(f):
-                    files.append(f)
+                    pass # TODO: log skipping
+            if entry.is_file():
+                if file_filter(entry):
+                    files.append(entry)
         if not len(files) == 0:
-            cb(files)
+            cb(files, queued_dir)
 
 
 def sha1sum(path):
@@ -52,12 +52,19 @@ def sha1sum(path):
     return sha1.hexdigest()
 
 
-def is_fits(f: os.DirEntry):
+def is_fits(f: os.DirEntry) -> bool:
     filename = os.fsdecode(f)
+    if is_compressed(f):
+        filename = os.path.splitext(filename)[0]
     return filename.lower().endswith(".fit") or filename.lower().endswith(".fits")
 
 
-def marked_bad(f: os.DirEntry):
+def is_compressed(f: os.DirEntry) -> bool:
+    filename = os.fsdecode(f)
+    return filename.lower().endswith(".xz") or filename.lower().endswith(".gz")
+
+
+def marked_bad(f: os.DirEntry) -> bool:
     """" skips over files that are marked bad """
     filename = os.fsdecode(f)
     return filename.lower().startswith("bad")
@@ -69,9 +76,6 @@ def is_master(name: str):
             or name.startswith("MDF-ISO")
             or name.startswith("BPM")
             or name.startswith("MF-ISO"))
-
-
-
 
 
 def read_headers(file: object) -> Header:

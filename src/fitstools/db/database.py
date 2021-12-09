@@ -91,13 +91,15 @@ class FilesDao:
         self.db.execute("""
             CREATE TABLE IF NOT EXISTS library_files (
                 id INT PRIMARY KEY,
-                root INTEGER NOT NULL,
+                root_id INTEGER NOT NULL,
                 path VARCHAR NOT NULL,
-                content_id BLOB, 
-                FOREIGN KEY(root) REFERENCES library_roots(id)
+                size integer NOT NULL,
+                mtime_millis integer NOT NULL,
+                last_seen integer NOT NULL,
+                FOREIGN KEY(root_id) REFERENCES library_roots(id)
             );            
         """)
-        self.db.execute("CREATE INDEX IF NOT EXISTS library_files_content_id_idx ON library_files(content_id);")
+        # self.db.execute("CREATE INDEX IF NOT EXISTS library_files_content_id_idx ON library_files(content_id);")
         self.db.execute("INSERT INTO schema_versions (name, version) VALUES ('files', 1)")
 
     def find_by_content_id(self):
@@ -105,8 +107,8 @@ class FilesDao:
 
     def put_file(self, file):
         if getattr(file, 'id', 0) == 0:
-            cursor = self.db.execute("INSERT INTO library_files (root, path) VALUES (?, ?)", file.root.id, file.path)
+            cursor = self.db.execute("INSERT INTO library_files (root_id, path) VALUES (?, ?)", file.root.id, file.path)
             file.id = cursor.lastrowid
         else:
-            self.db.execute("UPDATE library_files set root=?, path=? WHERE id=?", file.name, file.path, file.id)
+            self.db.execute("UPDATE library_files set root_id=?, path=? WHERE id=?", file.name, file.path, file.id)
         return file
