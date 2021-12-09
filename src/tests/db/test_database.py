@@ -1,51 +1,46 @@
-from fitstools.db.database import *
-from fitstools.db.model import *
+import logging
 
-from fitstools.db.database import DatabaseManager
+from playhouse.reflection import print_table_sql
 
-temp_file = ":memory:"
+from fitstools.db.database_peewee import *
 
-
-def test_db_info():
-    DatabaseManager.print_version_info()
-
-
-def test_db_open():
-    with DatabaseManager.open(temp_file) as db:
-        res = db.execute("SELECT name FROM sqlite_master")
-        name = res.fetchone()
-        assert name[0] == "schema_versions"
+logger = logging.getLogger('peewee')
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)
 
 
-def test_files_create_schema():
-    with DatabaseManager.open(temp_file) as db:
-        RootsDao(db)
-        res = db.execute("SELECT name FROM sqlite_master WHERE type ='table'")
-        tables = [item for t in res for item in t]
-        assert "library_roots" in tables
+def test_print_sql(database):
+    print_table_sql(Root)
 
 
-def test_files_root_crud():
-    with DatabaseManager.open(temp_file) as db:
-        roots = RootsDao(db)
-        root = Root(name="main", path=r"C:\Astro")
-        roots.put_root(root)
-        assert root.id == 1
-        new_root = roots.get_root_by_name("main")
-        assert new_root.id == 1
-        new_root.path = r"D:\Astro"
-        roots.put_root(new_root)
-        root = roots.get_root_by_name("main")
-        assert root.path == r"D:\Astro"
-        roots = roots.list_roots()
-        assert root in roots
+def test_create_root(database):
+    root = Root()
+    root.name = "dummy"
+    root.last_path = r'C:\TEMP'
+    root.save()
 
 
-def test_files_file_crud():
-    with DatabaseManager.open(temp_file) as db:
-        roots = RootsDao(db)
-        files = FilesDao(db)
-        root = Root(name="main", path=r"C:\Astro")
-        roots.put_root(root)
-        file = File(root=root, path=r"Deep Sky\Raw\filename.fit")
-        files.put_file(file)
+def test_deletes_cascade(database):
+    root = Root(name="dummy", last_path=r'C:\TEMP')
+    file = File(root=root, path="subdir", name="image01.fits", size=0, mtime_millis=0)
+    image = Image(file=file)
+    meta1 = ImageMeta(image=image, key="key1", value="value1")
+    meta2 = ImageMeta(image=image, key="key2", value="value2")
+    for obj in (root, file, image, meta1, meta2):
+        obj.save()
+
+    assert ImageMeta.select().count() == 2
+    File.delete_by_id(file.rowid)
+    for table in (File, Image, ImageMeta):
+        assert table.select().count() == 0
+
+
+def test_model_str():
+    root = Root(name="dummy", last_path=r'C:\TEMP')
+    assert str(root) == "Root(name=dummy, last_path=C:\\TEMP)"
+
+
+def test_model_eq():
+    root = Root(name="dummy", last_path=r'C:\TEMP')
+    root2 = Root(name="dummy", last_path=r'C:\TEMP')
+    assert root == root2

@@ -6,3 +6,4 @@ PyYAML~=6.0
 photutils~=1.2.0
 threadpoolctl~=3.0.0
 peewee~=3.14.8
+fs~=2.4.14
