@@ -1,0 +1,7 @@
+SELECT root.last_path, file.path, file.name from file
+JOIN root on file.root_id = root.rowid
+JOIN image on image.file_id = file.rowid
+JOIN imagemeta as meta on meta.image_id = image.rowid
+JOIN imagemeta as meta2 on meta2.image_id = image.rowid
+WHERE meta.key = 'OBJECT' and meta.value = 'WizardAndLion'
+and meta2.key='FILTER' and meta2.value='Ha'

@@ -1,3 +1,8 @@
+import gzip
+import lzma
+import os.path
+import typing
+
 from playhouse.sqlite_ext import *
 
 
@@ -20,21 +25,12 @@ def _get_data_dict(obj):
         return vars(obj)
 
 
-def auto_eq(cls):
-    def __eq__(self, other):
-        return _get_data_dict(self).__eq__(_get_data_dict(other))
-
-    cls.__eq__ = __eq__
-    return cls
-
-
 # model notes:
 # a file can contain 0 or more images (usually 1)
 # an image is always contained by a file
 # there are multiple kinds of images (APT_FITS, NINA_FITS, SGP_FITS, ...)
 
 @auto_str
-@auto_eq
 class Root(Model):
     rowid = RowIDField()
     name = CharField(unique=True)
@@ -42,33 +38,67 @@ class Root(Model):
 
 
 @auto_str
-@auto_eq
 class File(Model):
     rowid = RowIDField()
     root = ForeignKeyField(Root, on_delete='CASCADE')
     path = CharField()
     name = CharField()
     size = IntegerField()
-    type = CharField(null=True)  # FITS
-    compression = CharField(null=True)  # xz, gz, lz4
+    # type = CharField(index=True, null=True)  # FITS
+    # compression = CharField(null=True)  # xz, gz, lz4
     mtime_millis = IntegerField()
-    sha1 = BlobField(index=True, null=True)  # or CharField?
+
+    # sha1 = BlobField(index=True, null=True)  # or CharField?
 
     class Meta:
         indexes = (
             (('root', 'path', 'name'), True),  # Note the trailing comma!
         )
 
+    def get_file_exts(self) -> typing.List[str]:
+        parts = str(self.name).lower().rsplit('.', maxsplit=2)
+        if len(parts) and parts[0] == '':  # hidden file that starts with a '.'
+            parts = parts[1:]
+        if len(parts) == 1:  # no ext
+            return []
+        ext = parts[-1]
+        if ext == "xz" or ext == "gz":  # is compressed?
+            return parts[-2:]
+        else:
+            return parts[-1:]
+
+    def full_filename(self) -> str:
+        return os.path.join(str(self.root.last_path), str(self.path), str(self.name))
+
+    def fopen(self):
+        file_exts = self.get_file_exts()
+        if len(file_exts) and file_exts[-1] == "xz":
+            return lzma.open(self.full_filename(), mode='rb')
+        elif len(file_exts) and file_exts[-1] == "gz":
+            return gzip.open(self.full_filename(), mode='rb')
+        else:
+            return open(self.full_filename(), mode='rb')
+
+
+# @auto_str
+# class FileMeta(Model):
+#     file = ForeignKeyField(File, on_delete='CASCADE', backref='metadata')
+#     key = CharField()
+#     value = CharField()
+#
+#     class Meta:
+#         indexes = (
+#             (('file', 'key', 'value'), False),  # Note the trailing comma!
+#         )
+
 
 @auto_str
-@auto_eq
 class Image(Model):
     rowid = RowIDField()
     file = ForeignKeyField(File, on_delete='CASCADE', backref='images')
 
 
 @auto_str
-@auto_eq
 class ImageMeta(Model):
     image = ForeignKeyField(Image, on_delete='CASCADE', backref='metadata')
     key = CharField()
@@ -76,7 +106,7 @@ class ImageMeta(Model):
 
     class Meta:
         indexes = (
-            (('image', 'key'), True),  # Note the trailing comma!
+            (('key', 'value'), False),  # Note the trailing comma!
         )
 
 
