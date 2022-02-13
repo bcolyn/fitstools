@@ -53,7 +53,7 @@ class FitsFileFormat(FileFormat):
     def safe_dict(headers: Header) -> typing.Dict[str, str]:
         result = {}
         card: Card
-        for card in headers.cards():
+        for card in headers.cards:
             result[card.keyword]: FitsFileFormat.safe_value(card)
         return result
 
