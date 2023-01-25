@@ -1,5 +1,8 @@
+import gzip
 import hashlib
+import lzma
 import os
+from pathlib import Path
 
 from astropy.io import fits
 from astropy.io.fits import Header, VerifyError
@@ -78,9 +81,31 @@ def is_master(name: str):
             or name.startswith("MF-ISO"))
 
 
-def read_headers(file: object) -> Header:
-    with fits.open(file, mode='readonly') as hdul:
-        return hdul[0].header  # support more than 1 HDU?
+def read_headers(file: str) -> Header:
+    def get_file_exts(path: Path):
+        parts = str(path.name).lower().rsplit('.', maxsplit=2)
+        if len(parts) and parts[0] == '':  # hidden file that starts with a '.'
+            parts = parts[1:]
+        if len(parts) == 1:  # no ext
+            return []
+        ext = parts[-1]
+        if ext == "xz" or ext == "gz":  # is compressed?
+            return parts[-2:]
+        else:
+            return parts[-1:]
+
+    def fopen(file_name: str):
+        file_exts = get_file_exts(Path(file_name))
+        if len(file_exts) and file_exts[-1] == "xz":
+            return lzma.open(file_name, mode='rb')
+        elif len(file_exts) and file_exts[-1] == "gz":
+            return gzip.open(file_name, mode='rb')
+        else:
+            return open(file_name, mode='rb')
+
+    with fopen(file) as fd:
+        with fits.open(fd, mode='readonly') as hdul:
+            return hdul[0].header  # support more than 1 HDU?
 
 
 def find_header(headers: Header, *fieldnames):

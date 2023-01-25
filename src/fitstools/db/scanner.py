@@ -98,8 +98,13 @@ class Importer:
         roots: typing.Sequence[Root] = list(Root.select().execute())
         for root in roots:
             logger.info("import library root: %s", str(root.last_path))
-            change_list = self.import_files_from(fs.open_fs(root.last_path), root)
-            yield change_list
+            try:
+                open_fs = fs.open_fs(root.last_path, writeable=False)
+                change_list = self.import_files_from(open_fs, root)
+                yield change_list
+            except:
+                continue
+
 
     # TODO: check root exists and is non-empty
     def import_files_from(self, root_fs: FS, root: Root) -> ChangeList:

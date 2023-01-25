@@ -91,11 +91,23 @@ class File(Model):
 #             (('file', 'key', 'value'), False),  # Note the trailing comma!
 #         )
 
+@auto_str
+class ImageSet(Model):
+    type = CharField()
+    capture_date = DateTimeField()
+    filter = CharField()
+    sub_exp = IntegerField()
+    camera = CharField()
+    gain = IntegerField()
+    temp = IntegerField()
+    target_location = CharField()
+
 
 @auto_str
 class Image(Model):
     rowid = RowIDField()
     file = ForeignKeyField(File, on_delete='CASCADE', backref='images')
+    image_set = ForeignKeyField(File, on_delete='SET NULL', backref='images')
 
 
 @auto_str
@@ -110,4 +122,4 @@ class ImageMeta(Model):
         )
 
 
-CORE_MODELS = [Root, File, Image, ImageMeta]
+CORE_MODELS = [Root, File, Image, ImageMeta, ImageSet]
