@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 import configparser
 import os
+from os.path import expanduser
 
 from astropy import units as u
-from os.path import expanduser
 from astropy.coordinates import SkyCoord
 
 from fitstools.util import read_headers, try_header, is_fits
 
 
 class ReportLine:
-    def __init__(self, name, ra, dec, orientation, filter_name, focal_length, exposure):
+    def __init__(self, name, ra, dec, orientation, filter_name, focal_length, camera, exposure):
         self.name = name
         self.ra = ra
         self.dec = dec
@@ -18,18 +18,19 @@ class ReportLine:
         self.filter = filter_name if filter_name is not None else ""
         self.focal_length = focal_length
         self.exposure = exposure
+        self.camera = camera
 
     def to_str(self):
         return "\t".join(
-            [self.name, self.filter, self.ra, self.dec, str(self.orientation), str(self.focal_length), "", "", "",
-             str(self.exposure)])
+            [self.name, self.filter, self.ra, self.dec, str(self.orientation), str(self.focal_length), self.camera,
+             "", "", str(self.exposure)])
 
 
-def add_to_report(report, object_name, coord, orientation, filter_name, focal_length, exposure):
+def add_to_report(report, object_name, coord, orientation, filter_name, focal_length, camera, exposure):
     key = make_key(object_name, filter_name)
     if key not in report:
         report[key] = ReportLine(object_name, format_ra(coord), format_dec(coord), orientation, filter_name,
-                                 focal_length, exposure)
+                                 focal_length, camera, exposure)
     else:
         line: ReportLine = report[key]
         line.exposure += exposure
@@ -62,8 +63,9 @@ def summarize_dir(dir: str):
                 filter = try_header(headers, "FILTER")
                 focal_length = try_header(headers, "FOCALLEN")
                 exposure = try_header(headers, "EXPOSURE", "EXPTIME")
+                camera = try_header(headers, "INSTRUME")
                 print(object_name, exposure)
-                add_to_report(report, object_name, coord, orientation, filter, focal_length, exposure)
+                add_to_report(report, object_name, coord, orientation, filter, focal_length, camera, exposure)
 
     return report
 
@@ -83,7 +85,7 @@ def format_dec(coord):
 def format_orientation(angle):
     if angle is None:
         return None
-    FLEX = 5
+    FLEX = 10
     angle = angle + 360 if angle < 0 else angle  # normalize negative angles
     angle = angle - 180 if angle > 180 else angle  # if image is upside-down
     if angle < FLEX or angle > 180 - FLEX:
@@ -110,6 +112,7 @@ def main():
     if dir:
         store_config(conf_file, config)
         report = summarize_dir(dir)
+        print("dir:" + str(dir))
         print_report(report)
 
 
