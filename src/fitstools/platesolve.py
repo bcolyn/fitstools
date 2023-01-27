@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+import typing
 from astropy.io.fits import Header
 
 from .util import find_header
@@ -19,7 +20,7 @@ class ASTAPSolver:
         self._tmp_dir = tempfile.gettempdir()
         self._log = True
 
-    def solve(self, image_file: Path, hint=None) -> Header:
+    def solve(self, image_file: Path, hint: typing.Dict[str, str] = None) -> Header:
         if not image_file.is_file():
             raise Exception("path is not a file")
         output_file = Path(self._tmp_dir, image_file.name)
@@ -27,9 +28,11 @@ class ASTAPSolver:
         ini = output_file.with_suffix(".ini")
         log = output_file.with_suffix(".log")
         try:
-            params = [self._exe, "-f", str(image_file), "-o", str(output_file), "-r", "180", "-s", "100"]
+            params = [self._exe, "-f", str(image_file), "-o", str(output_file)]
+            options = {"-r": "180", "-s": "100"}
             if hint is not None:
-                params.extend(hint)
+                options.update(hint)
+            params.extend([item for k in options for item in (k, options[k])])
             if self._log:
                 params.append("-log")
 
@@ -66,18 +69,19 @@ class ASTAPSolver:
         return Header.fromtextfile(wcs_file, endcard=False)
 
 
-def create_hint(ra, dec, radius=None):
-    hint = []
+def create_hint(ra, dec, radius=None) -> typing.Dict[str, str]:
+    hint = dict()
     if ra is not None and dec is not None:
         ra_str = str(ra / 15)
         spd_str = str(90 + dec)
-        hint.extend(["-ra", ra_str, "-spd", spd_str])
+        hint["-ra"] = ra_str
+        hint["-spd"] = spd_str
     if radius:
-        hint.extend(["-fov", str(radius)])
+        hint["-fov"] = str(radius)
     return hint
 
 
-def extract_hint(header: Header):
+def extract_hint(header: Header) -> typing.Dict[str, str]:
     ra = find_header(header, "RA", "CRVAL1")
     dec = find_header(header, "DEC", "CRVAL2")
     scale = find_header(header, "SCALE", "PIXSCALE")

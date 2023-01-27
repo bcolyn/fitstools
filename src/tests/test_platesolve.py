@@ -63,7 +63,7 @@ def test_error():
 
 def test_nosolution():
     with pytest.raises(SolverFailure) as excinfo:
-        headers = solve_testFile("DarkFlats_2020-05-30T155512_11.43sec_HaOIII__0C_frame10.fit")
+        headers = solve_testFile("DarkFlats_2020-05-30T155512_11.43sec_HaOIII__0C_frame10.fit", {"-r": "1"})
     assert "Failed to solve image" in str(excinfo.value)
     assert "No solution found!" in excinfo.value.log[-1]
 
