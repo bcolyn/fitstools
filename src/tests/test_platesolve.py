@@ -44,6 +44,7 @@ def test_solve_asi294mc_blind():
     assert headers["CRVAL2"] == pytest.approx(57.5042416425, 0.001)
 
 
+# TODO fails because of UTF-8 char in ASTAP output. fixed by astap upgrade
 def test_solve_asi290mm_blind():
     hint = extract_hint(Header({"FOCALLEN": 200, "YPIXSZ": 2.9, "NAXIS2": 1088}))
     headers = solve_testFile("asi290_200mm.fits", hint)
