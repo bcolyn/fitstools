@@ -21,25 +21,30 @@ def test_solve_asi294mc_135mm():
 def test_fix_wcs():
     #fname = "M57_2020-05-30T022249_30sec_HaOIII_COLD_-17C_frame19.fit"
     #fname = "Pacman OIII_2019-09-20T230611_60sec_OIII__-15C_frame12.fit"
-    fname = "Sadr Area_2020-05-28T011655_60sec_HaOIII__-15C_frame18.fit"
     # fname = "L_2018-10-23_20-58-50_Bin1x1_240s__-20C.fit"
+
+    fname = "Sadr Area_2020-05-28T011655_60sec_HaOIII__-15C_frame18.fit"
+    hdu = fits.open(resource_file(fname))[0]
+    header = hdu.header
+
     solved_headers = solve_test_file(fname)
     print_header(solved_headers)
     solved_wcs = WCS(solved_headers)
     solved_wcs.printwcs()
-    print_footprint(solved_wcs)
+    print_footprint(solved_wcs, header)
 
-    hdu = fits.open(resource_file(fname))[0]
-    header = hdu.header
-    fixup_wcs(header)
+    fixup_wcs_rotation(header)
     print_header(header)
     wcs = WCS(header)
     wcs.printwcs()
 
     print_footprint(wcs)
+    # TODO: assert coordinates match
 
 
-def fixup_wcs(header):
+#TODO: move this to the capture program support class (SGP)
+# TODO: check requirements are present: POSANGLE, PIXSCALE, FLIPPED
+def fixup_wcs_rotation(header):
     crota = header["POSANGLE"] - 180
     crota_rad = radians(crota)
     cdelt = header["PIXSCALE"] / 3600.0
@@ -61,9 +66,9 @@ def fixup_wcs(header):
         header["CD2_2"] = cdelt * cos(crota_rad)
 
 
-def print_footprint(wcs):
+def print_footprint(wcs, header=None):
     print("\nFOOTPRINT")
-    footprint = wcs.calc_footprint()
+    footprint = wcs.calc_footprint(header)
     labels = ["top-left", "bottom-left", "bottom-right", "top-right"]
     for (ra, dec) in footprint:
         print(labels.pop(0) + "\t" + Angle(ra * u.deg).to_string(unit=u.hour) + "\t" + Angle(dec * u.deg).to_string())
