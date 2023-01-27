@@ -65,6 +65,13 @@ def fixup_wcs_rotation(header):
         header["CD2_1"] = cdelt * sin(crota_rad)
         header["CD2_2"] = cdelt * cos(crota_rad)
 
+#TODO: check fixups for other software
+# for Capture_00001_WCS.fits
+# Image bounds:
+#    top-left .............. RA: 12 30 28.270  Dec: +89 05 52.20
+#    top-right ............. RA: 16 38 44.069  Dec: +88 04 41.71
+#    bottom-left ........... RA:  0 17 42.343  Dec: +89 56 42.92
+#    bottom-right .......... RA: 18 38 06.620  Dec: +88 17 53.67
 
 def print_footprint(wcs, header=None):
     print("\nFOOTPRINT")
