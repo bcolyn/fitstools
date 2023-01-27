@@ -39,7 +39,7 @@ class Catalogs:
         logger.info("searching catalog")
         result = []
         world = wcs.WCS(header)
-        footprint = world.calc_footprint().tolist()
+        footprint = world.calc_footprint(header).tolist()
         cx, cy = ImageMeta.from_fits(header).center()
         center_coord = pixel_to_skycoord(cx, cy, world, 1)
         corners = map(lambda t: SkyCoord(t[0], t[1], unit=world.world_axis_units), footprint)
@@ -49,9 +49,8 @@ class Catalogs:
         for pix in hp_pix:
             group = self._catalog.get_group(pix)
             group_res = world.footprint_contains(SkyCoord(group.ra * u.deg, group.dec * u.deg))
-            result.append(list(group[group_res].itertuples(index=False, name=None)))
-
-        logger.info("returning " + str(result))
+            matches = list(group[group_res].itertuples(index=False, name=None))
+            result.extend(matches)
         return result
 
     def _load_csv(self, file):
