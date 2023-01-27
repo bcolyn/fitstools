@@ -29,12 +29,18 @@ def _get_data_dict(obj):
 # a file can contain 0 or more images (usually 1)
 # an image is always contained by a file
 # there are multiple kinds of images (APT_FITS, NINA_FITS, SGP_FITS, ...)
+# an image has metadata in its header fields
+# images group together in a set - a set of images is taken at roughly the same time, same material, same target
+# an image can have statistics - median, fwhm/hfr, noise evaluation, number of stars
 
 @auto_str
 class Root(Model):
     rowid = RowIDField()
     name = CharField(unique=True)
     last_path = CharField()
+
+    def __eq__(self, other):
+        return self.name == other.name and self.last_path == other.last_path
 
 
 @auto_str
@@ -107,7 +113,7 @@ class ImageSet(Model):
 class Image(Model):
     rowid = RowIDField()
     file = ForeignKeyField(File, on_delete='CASCADE', backref='images')
-    image_set = ForeignKeyField(File, on_delete='SET NULL', backref='images')
+    image_set = ForeignKeyField(File, on_delete='SET NULL', backref='images', null=True)
 
 
 @auto_str
