@@ -1,15 +1,8 @@
+from datetime import datetime, date
 from enum import Enum, auto
 
 
-class File:
-    pass
-
-
-class Image:
-    pass
-
-
-class FrameType(Enum):
+class ImageType(Enum):
     UNKNOWN = auto()
     BIAS = auto()
     DARK = auto()
@@ -23,19 +16,32 @@ class FrameType(Enum):
     INTEGRATION = auto()
 
 
-class ImageSetMeta:
-    img_type: FrameType = FrameType.UNKNOWN
+class ImageMeta:
+    img_type: ImageType = ImageType.UNKNOWN
     exposure: float = None
-    temp: float = None
+    camera_temperature: float = None
+    camera_name: str = None
     object_name: str = None
-    camera: str = None
     filter: str = None
     xbin: int = None
     ybin: int = None
     gain: int = None
     offset: int = None
     telescope: str = None
+    datetime_local: datetime = None
+    datetime_utc: datetime = None
 
 
-class ImageSet:
-    pass
+class ImageSetMeta:
+    img_type: ImageType = ImageType.UNKNOWN
+    exposure: float = None
+    camera_temperature: float = None
+    camera_name: str = None
+    object_name: str = None
+    filter: str = None
+    xbin: int = None
+    ybin: int = None
+    gain: int = None
+    offset: int = None
+    telescope: str = None
+    session_date: date = None

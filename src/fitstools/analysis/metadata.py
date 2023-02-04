@@ -2,17 +2,17 @@ from pathlib import Path
 
 from abc import ABC, abstractmethod
 from typing import Dict, List
-
+from dateutil import parser
 from astropy.io.fits import Header, VerifyError
 from logzero import logger
 
-from fitstools.model import ImageSetMeta, FrameType
+from fitstools.model import ImageMeta, ImageType
 
 
 class MetadataAnalyser:
 
     @classmethod
-    def normalize(cls, metadata: Dict[str, str], file: Path) -> ImageSetMeta:
+    def normalize(cls, metadata: Header, file: Path) -> ImageMeta:
         support = Support.find(metadata, file)
         return support.normalize(metadata)
 
@@ -20,7 +20,7 @@ class MetadataAnalyser:
 class Support(ABC):
     DEFAULT_PRIO = 1000
     fits_image_type: str
-    fits_image_type_map: Dict[str, FrameType]
+    fits_image_type_map: Dict[str, ImageType]
     _support_types: List["Support"] = []
 
     def __init_subclass__(cls) -> None:
@@ -35,7 +35,7 @@ class Support(ABC):
                 return support
 
     @abstractmethod
-    def normalize(self, metadata) -> ImageSetMeta:
+    def normalize(self, metadata: Header) -> ImageMeta:
         pass
 
     @abstractmethod
@@ -53,14 +53,14 @@ class Support(ABC):
 class _DefaultMapping:
     _fits_image_type_header = "IMAGETYP"
     _fits_image_type_map = {
-        "LIGHT": FrameType.LIGHT,
-        "DARK": FrameType.DARK,
-        "FLAT": FrameType.FLAT,
-        "BIAS": FrameType.BIAS,
-        "Light Frame": FrameType.LIGHT,
-        "Dark Frame": FrameType.DARK,
-        "Flat Frame": FrameType.FLAT,
-        "Bias Frame": FrameType.BIAS
+        "LIGHT": ImageType.LIGHT,
+        "DARK": ImageType.DARK,
+        "FLAT": ImageType.FLAT,
+        "BIAS": ImageType.BIAS,
+        "Light Frame": ImageType.LIGHT,
+        "Dark Frame": ImageType.DARK,
+        "Flat Frame": ImageType.FLAT,
+        "Bias Frame": ImageType.BIAS
     }
 
     @staticmethod
@@ -71,13 +71,13 @@ class _DefaultMapping:
                 return value_map[header_value]
         return missing_value
 
-    def _std_mapping(self, metadata) -> ImageSetMeta:
-        meta = ImageSetMeta()
+    def _std_mapping(self, metadata: Header) -> ImageMeta:
+        meta = ImageMeta()
         meta.img_type = self._map_meta(metadata, self._fits_image_type_header, self._fits_image_type_map,
-                                       FrameType.UNKNOWN)
-        meta.camera = _header(metadata, "INSTRUME")
+                                       ImageType.UNKNOWN)
+        meta.camera_name = _header(metadata, "INSTRUME")
         meta.exposure = _float(_header(metadata, "EXPOSURE", "EXPTIME"))
-        meta.temp = _float(_header(metadata, "CCD-TEMP", "SET-TEMP"))
+        meta.camera_temperature = _float(_header(metadata, "CCD-TEMP", "SET-TEMP"))
         meta.object_name = _header(metadata, "OBJECT")
         meta.filter = _header(metadata, "FILTER")
         meta.xbin = _int(_header(metadata, "XBINNING"))
@@ -85,12 +85,14 @@ class _DefaultMapping:
         meta.gain = _int(_header(metadata, "GAIN"))
         meta.offset = _int(_header(metadata, "OFFSET"))
         meta.telescope = _header(metadata, "TELESCOP")
+        meta.datetime_utc = _datetime(_header(metadata, "DATE-OBS"))
+        meta.datetime_local = _datetime(_header(metadata, "DATE-LOC"))
         return meta
 
 
 class GenericSupport(Support, _DefaultMapping):
 
-    def normalize(self, metadata) -> ImageSetMeta:
+    def normalize(self, metadata: Header) -> ImageMeta:
         return self._std_mapping(metadata)
 
     def _accept(self, headers, path) -> bool:
@@ -103,7 +105,7 @@ class GenericSupport(Support, _DefaultMapping):
 
 class SGPSupport(Support, _DefaultMapping):
 
-    def normalize(self, metadata):
+    def normalize(self, metadata: Header):
         return self._std_mapping(metadata)
 
     def _accept(self, headers, path):
@@ -112,7 +114,7 @@ class SGPSupport(Support, _DefaultMapping):
 
 class APTSupport(Support, _DefaultMapping):
 
-    def normalize(self, metadata):
+    def normalize(self, metadata: Header):
         return self._std_mapping(metadata)
 
     def _accept(self, headers, path):
@@ -121,7 +123,7 @@ class APTSupport(Support, _DefaultMapping):
 
 class NinaSupport(Support, _DefaultMapping):
 
-    def normalize(self, metadata):
+    def normalize(self, metadata: Header):
         return self._std_mapping(metadata)
 
     def _accept(self, headers, path):
@@ -138,7 +140,7 @@ def _option(function):
 
 _int = _option(int)
 _float = _option(float)
-
+_datetime = _option(parser.parse)
 
 def _find_header_card(headers: Header, *fieldnames):
     for fieldname in fieldnames:

@@ -11,7 +11,7 @@ from .util import find_header
 
 
 class ASTAPSolver:
-    _tmp_dir: Path
+    _tmp_dir: str
     _exe: str
     _log: bool
 
