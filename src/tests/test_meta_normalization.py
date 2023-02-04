@@ -1,3 +1,4 @@
+import datetime
 from pathlib import Path
 from dateutil import parser
 import pytest
@@ -25,6 +26,7 @@ def test_sgp_meta():
     assert results.telescope == "EQMOD ASCOM HEQ5/6"
     assert results.datetime_local == parser.parse("2020-05-30T02:22:49.096882")
     assert results.datetime_utc == parser.parse("2020-05-30T00:22:49.096882")
+    assert results.session_date() == datetime.date(2020, 5, 29)
 
 
 def test_apt_meta():
@@ -43,6 +45,7 @@ def test_apt_meta():
     assert results.telescope == "EQMOD HEQ5/6"
     assert results.datetime_local is None
     assert results.datetime_utc == parser.parse("2018-09-17T21:04:46")
+    assert results.session_date() == datetime.date(2018, 9, 17)
 
 
 def test_nina_meta():
@@ -61,6 +64,8 @@ def test_nina_meta():
     assert results.telescope is None
     assert results.datetime_local == parser.parse("2021-03-02T21:19:00.455")
     assert results.datetime_utc == parser.parse("2021-03-02T20:19:00.455")
+    assert results.session_date() == datetime.date(2021, 3, 2)
+
 
 def test_maximdl_meta():
     header = Header.fromstring(sample_headers.header_maximdl, "\n")
@@ -78,10 +83,11 @@ def test_maximdl_meta():
     assert results.telescope == "iTelescope 33"
     assert results.datetime_local is None
     assert results.datetime_utc == parser.parse("2018-07-04T14:03:03")
-
+    assert results.session_date() == datetime.date(2018, 7, 4)
 
 def test_no_meta():
     header = Header()
     results = MetadataAnalyser.normalize(header, Path("dummyFile.fit"))
     assert results.img_type == ImageType.UNKNOWN
     assert results.camera_name is None
+    assert results.session_date() is None
