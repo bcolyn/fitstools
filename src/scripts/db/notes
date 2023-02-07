@@ -1,0 +1,29 @@
+TODO: normalize the metadata
+(maybe keep the raw header in a BLOB, but really do we need this?)
+
+TODO: group images in a session
+* by folder (assumes user has somewhat sane file management)
+* dy date/time (within 24 or more strictly?)
+* by OBJECT
+* by coords and/or ANGLE
+* by INSTRUME
+* by TELESCOP
+* by FILTER => for matching flats
+* by OBSERVER
+* by SITENAME
+* EXPOSURE => for matching darks
+* CCD-TEMP/SET-TEMP => for matching darks
+* XBINNING/CCDXBIN ?
+* GAIN => for matching darks
+* OFFSET => for matching darks
+
+why group?
+* make it presentable to the user
+* store properties from normalization
+  - notes?
+
+TODO: image statistics
+* median value
+* stddev? noise estimate?
+* ? star analysis
+* ?

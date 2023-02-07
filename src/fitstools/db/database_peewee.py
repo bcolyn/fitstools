@@ -3,6 +3,7 @@ import lzma
 import os.path
 import typing
 
+from astropy.io.fits import Header
 from playhouse.sqlite_ext import *
 
 
@@ -99,21 +100,31 @@ class File(Model):
 
 @auto_str
 class ImageSet(Model):
-    type = CharField()
-    capture_date = DateTimeField()
-    filter = CharField()
-    sub_exp = IntegerField()
-    camera = CharField()
-    gain = IntegerField()
-    temp = IntegerField()
-    target_location = CharField()
+    root = ForeignKeyField(Root, on_delete='CASCADE')
+    path = CharField()
+    img_type = CharField()
+    exposure = FloatField()
+    camera_temperature = IntegerField(null=True)
+    camera_name = CharField(null=True)
+    object_name = CharField()
+    filter = CharField(null=True)
+    xbin = IntegerField(null=True)
+    ybin = IntegerField(null=True)
+    gain = IntegerField(null=True)
+    offset = IntegerField(null=True)
+    telescope = CharField(null=True)
+    capture_date = DateField()
 
 
 @auto_str
 class Image(Model):
     rowid = RowIDField()
-    file = ForeignKeyField(File, on_delete='CASCADE', backref='images')
+    file = ForeignKeyField(File, on_delete='CASCADE', backref='images', null=False)
     image_set = ForeignKeyField(File, on_delete='SET NULL', backref='images', null=True)
+
+    def get_header(self) -> Header:
+        meta_dict = {meta.key: meta.value for meta in self.metadata}
+        return Header(meta_dict)
 
 
 @auto_str

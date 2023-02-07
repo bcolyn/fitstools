@@ -6,13 +6,13 @@ from dateutil import parser
 from astropy.io.fits import Header, VerifyError
 from logzero import logger
 
-from fitstools.model import ImageMeta, ImageType
+from fitstools.model import ImageType, NormalizedImageMeta
 
 
 class MetadataAnalyser:
 
     @classmethod
-    def normalize(cls, metadata: Header, file: Path) -> ImageMeta:
+    def normalize(cls, metadata: Header, file: Path) -> NormalizedImageMeta:
         support = Support.find(metadata, file)
         return support.normalize(metadata)
 
@@ -35,7 +35,7 @@ class Support(ABC):
                 return support
 
     @abstractmethod
-    def normalize(self, metadata: Header) -> ImageMeta:
+    def normalize(self, metadata: Header) -> NormalizedImageMeta:
         pass
 
     @abstractmethod
@@ -71,8 +71,8 @@ class _DefaultMapping:
                 return value_map[header_value]
         return missing_value
 
-    def _std_mapping(self, metadata: Header) -> ImageMeta:
-        meta = ImageMeta()
+    def _std_mapping(self, metadata: Header) -> NormalizedImageMeta:
+        meta = NormalizedImageMeta()
         meta.img_type = self._map_meta(metadata, self._fits_image_type_header, self._fits_image_type_map,
                                        ImageType.UNKNOWN)
         meta.camera_name = _header(metadata, "INSTRUME")
@@ -92,7 +92,7 @@ class _DefaultMapping:
 
 class GenericSupport(Support, _DefaultMapping):
 
-    def normalize(self, metadata: Header) -> ImageMeta:
+    def normalize(self, metadata: Header) -> NormalizedImageMeta:
         return self._std_mapping(metadata)
 
     def _accept(self, headers, path) -> bool:
@@ -141,6 +141,7 @@ def _option(function):
 _int = _option(int)
 _float = _option(float)
 _datetime = _option(parser.parse)
+
 
 def _find_header_card(headers: Header, *fieldnames):
     for fieldname in fieldnames:

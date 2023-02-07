@@ -16,7 +16,7 @@ class ImageType(Enum):
     INTEGRATION = auto()
 
 
-class ImageMeta:
+class NormalizedImageMeta:
     img_type: ImageType = ImageType.UNKNOWN
     exposure: float = None
     camera_temperature: float = None
