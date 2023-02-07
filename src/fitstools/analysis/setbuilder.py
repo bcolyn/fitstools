@@ -2,7 +2,10 @@ from typing import Iterable
 
 from fitstools.analysis.metadata import MetadataAnalyser
 from fitstools.db.database_peewee import *
-from fitstools.model import NormalizedImageMeta
+from fitstools.model import NormalizedImageMeta, ImageType
+
+import logzero
+from logzero import logger
 
 
 class SetBuilder:
@@ -11,16 +14,18 @@ class SetBuilder:
     def combine():
         images = 0
         sets = 0
+        combinable = [ImageType.LIGHT, ImageType.DARK, ImageType.BIAS, ImageType.FLAT]
         images_with_meta = SetBuilder.find_unmatched_images()
         for image in images_with_meta:
             image_meta = MetadataAnalyser.normalize(image.get_header(), image.file.full_filename())
-            matching_set = SetBuilder.find_matching_set(image_meta, image.file.path, image.file.root.get_id())
-            if matching_set is None:
-                matching_set = SetBuilder.create_set(image_meta, image.file.path, image.file.root.get_id())
-                sets += 1
-            image.image_set = matching_set.get_id()
-            image.save()
-            images += 1
+            if image_meta.img_type in combinable:
+                matching_set = SetBuilder.find_matching_set(image_meta, image.file.path, image.file.root.get_id())
+                if matching_set is None:
+                    matching_set = SetBuilder.create_set(image_meta, image.file.path, image.file.root.get_id())
+                    sets += 1
+                image.image_set = matching_set.get_id()
+                image.save()
+                images += 1
         return images, sets
 
     @staticmethod

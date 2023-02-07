@@ -54,7 +54,7 @@ class FitsFileFormat(FileFormat):
         result = {}
         card: Card
         for card in headers.cards:
-            result[card.keyword]: FitsFileFormat.safe_value(card)
+            result[card.keyword] = FitsFileFormat.safe_value(card)
         return result
 
 

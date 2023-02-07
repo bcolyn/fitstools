@@ -14,19 +14,23 @@ CHUNKSIZE = 10
 
 
 def analyze(file: File):
-    logger.info("analyzing file %s", file.full_filename())
+    logger.info("reading headers of file %s", file.full_filename())
     file_format = FileFormatManager.get_format(file)
-    result = file_format.import_file(file)
-    return result
+    (images, meta) = file_format.import_file(file)
+    assert len(meta) > 0
+    logger.info("%d images with %d header fields" % (len(images), len(meta)))
+    return images, meta
 
 
 def main():
     logzero.loglevel(logzero.INFO)
 
-    database = "test.db"
+    database = "test_min.db"
 
     data_storage = DataStorage()
     data_storage.open(database)
+
+    logger.info("analyzing files for metadata")
 
     try:
         with multiprocessing.Pool(processes=PROCESSES) as pool:
@@ -45,8 +49,38 @@ def main():
 
     finally:
         data_storage.close()
+    logger.info("done")
+
+
+def main_serial():
+    logzero.loglevel(logzero.INFO)
+
+    database = "test_min.db"
+
+    data_storage = DataStorage()
+    data_storage.open(database)
+
+    logger.info("analyzing files for metadata")
+
+    try:
+        query = File.select(File, Root).join(Root) \
+            .where(File.rowid.not_in(Image.select(Image.file)))
+        data_storage.begin_tx()
+        try:
+            for file in query:
+                (images, metadata) = analyze(file)
+                for image in images:
+                    image.save()
+                ImageMeta.bulk_create(metadata, 60)
+            data_storage.commit_tx()
+        except Exception:
+            traceback.print_exc()
+            data_storage.rollback()
+    finally:
+        data_storage.close()
+    logger.info("done")
 
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    main()
+    main_serial()
