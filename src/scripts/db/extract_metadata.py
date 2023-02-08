@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import multiprocessing
 import traceback
+from io import BytesIO
 
 import logzero
 from logzero import logger
@@ -14,11 +15,14 @@ CHUNKSIZE = 10
 
 
 def analyze(file: File):
-    logger.info("reading headers of file %s", file.full_filename())
     file_format = FileFormatManager.get_format(file)
-    (images, meta) = file_format.import_file(file)
+    with file.fopen() as f:
+        # mainly for LZMA files, but also if we later add data analysis (gzip can do partial reads, but is faster with
+        # read-once. plain fits files have a slight penalty but not much)
+        data_bytes = BytesIO(f.read())
+    (images, meta) = file_format.import_file(file, data_bytes)
     assert len(meta) > 0
-    logger.info("%d images with %d header fields" % (len(images), len(meta)))
+    logger.info("%s\t%d images with %d header fields" % (file.full_filename(), len(images), len(meta)))
     return images, meta
 
 
@@ -41,7 +45,7 @@ def main():
                     data_storage.begin_tx()
                     for image in images:
                         image.save()
-                    ImageMeta.bulk_create(metadata, 20)
+                    ImageMeta.bulk_create(metadata, 60)
                     data_storage.commit_tx()
                 except Exception:
                     traceback.print_exc()
@@ -83,4 +87,4 @@ def main_serial():
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    main_serial()
+    main()

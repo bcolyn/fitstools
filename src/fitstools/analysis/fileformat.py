@@ -18,19 +18,18 @@ class FileFormat:
 
 
 class FitsFileFormat(FileFormat):
-    def import_file(self, file: File) -> [typing.List[Image], typing.List[Image]]:
+    def import_file(self, file, fd) -> [typing.List[Image], typing.List[Image]]:
         images = []
         metadata = []
-        with file.fopen() as fd:
-            with fits.open(fd) as hdul:
-                primary = hdul[0]
-                header = primary.header
-                image = Image(file=file)
-                header_dict = self.safe_dict(header)
-                for (key, value) in header_dict.items():
-                    meta = ImageMeta(image=image, key=key, value=value)
-                    metadata.append(meta)
-                images.append(image)
+        with fits.open(fd) as hdul:
+            primary = hdul[0]
+            header = primary.header
+            image = Image(file=file)
+            header_dict = self.safe_dict(header)
+            for (key, value) in header_dict.items():
+                meta = ImageMeta(image=image, key=key, value=value)
+                metadata.append(meta)
+            images.append(image)
         return images, metadata
 
     def accept(self, file: File) -> bool:
