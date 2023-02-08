@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import traceback
+
 import logzero
 from logzero import logger
 
@@ -6,10 +8,8 @@ from fitstools.analysis.setbuilder import SetBuilder
 from fitstools.db.scanner import DataStorage
 
 
-def main():
+def main(database="prod.db"):
     logzero.loglevel(logzero.INFO)
-
-    database = "test_min.db"
 
     data_storage = DataStorage()
     data_storage.open(database)
@@ -22,6 +22,7 @@ def main():
         data_storage.commit_tx()
     except Exception as err:
         logger.error(err)
+        traceback.print_exc()
         data_storage.rollback()
     finally:
         data_storage.close()

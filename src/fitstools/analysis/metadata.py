@@ -14,7 +14,10 @@ class MetadataAnalyser:
     @classmethod
     def normalize(cls, metadata: Header, file: Path) -> NormalizedImageMeta:
         support = Support.find(metadata, file)
-        return support.normalize(metadata)
+        try:
+            return support.normalize(metadata)
+        except Exception as ex:
+            logger.error("error mapping metadata from file %s:%s" % (file, ex))
 
 
 class Support(ABC):
@@ -77,13 +80,14 @@ class _DefaultMapping:
                                        ImageType.UNKNOWN)
         meta.camera_name = _header(metadata, "INSTRUME")
         meta.exposure = _float(_header(metadata, "EXPOSURE", "EXPTIME"))
-        meta.camera_temperature = _float(_header(metadata, "CCD-TEMP", "SET-TEMP"))
+        meta.actual_temperature = _float(_header(metadata, "CCD-TEMP"))
+        meta.set_temperature = _float(_header(metadata, "SET-TEMP"))
         meta.object_name = _header(metadata, "OBJECT")
         meta.filter = _header(metadata, "FILTER")
-        meta.xbin = _int(_header(metadata, "XBINNING"))
-        meta.ybin = _int(_header(metadata, "YBINNING"))
-        meta.gain = _int(_header(metadata, "GAIN"))
-        meta.offset = _int(_header(metadata, "OFFSET"))
+        meta.xbin = _round(_float(_header(metadata, "XBINNING")))
+        meta.ybin = _round(_float(_header(metadata, "YBINNING")))
+        meta.gain = _round(_float(_header(metadata, "GAIN")))
+        meta.offset = _round(_float(_header(metadata, "OFFSET")))
         meta.telescope = _header(metadata, "TELESCOP")
         meta.datetime_utc = _datetime(_header(metadata, "DATE-OBS"))
         meta.datetime_local = _datetime(_header(metadata, "DATE-LOC"))
@@ -138,7 +142,19 @@ def _option(function):
     return wrapper
 
 
+def _try(function):
+    def wrapper(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except Exception as ex:
+            logger.error(ex)
+            return None
+
+    return wrapper
+
+
 _int = _option(int)
+_round = _option(round)
 _float = _option(float)
 _datetime = _option(parser.parse)
 

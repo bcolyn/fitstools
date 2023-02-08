@@ -17,7 +17,8 @@ def test_sgp_meta():
     assert results.camera_name == "ZWO ASI294MC Pro"
     assert results.gain == 120
     assert results.exposure == 30.0
-    assert results.camera_temperature == -17.5
+    assert results.actual_temperature == -17.5
+    assert results.set_temperature == -18
     assert results.object_name == "M57"
     assert results.filter == "HaOIII"
     assert results.xbin == 1
@@ -36,7 +37,8 @@ def test_apt_meta():
     assert results.camera_name == "ZWO ASI294MC Pro"
     assert results.gain == 120
     assert results.exposure == 240
-    assert results.camera_temperature == -15.0
+    assert results.actual_temperature is None
+    assert results.set_temperature == -15.0
     assert results.object_name == "TEST"
     assert results.filter is None
     assert results.xbin == 1
@@ -55,7 +57,8 @@ def test_nina_meta():
     assert results.camera_name == "ZWO ASI294MC Pro"
     assert results.gain == 120
     assert results.exposure == 30
-    assert results.camera_temperature == -10.0
+    assert results.actual_temperature == -10.0
+    assert results.set_temperature == -10.0
     assert results.object_name == "MarsM45"
     assert results.filter is None
     assert results.xbin == 1
@@ -74,7 +77,8 @@ def test_maximdl_meta():
     assert results.camera_name == "Apogee USB/Net"
     assert results.gain is None
     assert results.exposure == 300
-    assert results.camera_temperature == pytest.approx(-35.0, 0.1)
+    assert results.actual_temperature == pytest.approx(-35.0, 0.1)
+    assert results.set_temperature == pytest.approx(-35.0, 0.1)
     assert results.object_name == "m17"
     assert results.filter == "SII"
     assert results.xbin == 1

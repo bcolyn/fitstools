@@ -6,10 +6,8 @@ from logzero import logger
 from fitstools.db.scanner import DataStorage, Importer
 
 
-def main():
+def main(database="prod.db"):
     logzero.loglevel(logzero.INFO)
-
-    database = "test_min.db"
 
     data_storage = DataStorage()
     data_storage.open(database)

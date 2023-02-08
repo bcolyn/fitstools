@@ -1,6 +1,7 @@
 from typing import Iterable
 
 from fitstools.analysis.metadata import MetadataAnalyser
+from fitstools.config import Config
 from fitstools.db.database_peewee import *
 from fitstools.model import NormalizedImageMeta, ImageType
 
@@ -18,7 +19,7 @@ class SetBuilder:
         images_with_meta = SetBuilder.find_unmatched_images()
         for image in images_with_meta:
             image_meta = MetadataAnalyser.normalize(image.get_header(), image.file.full_filename())
-            if image_meta.img_type in combinable:
+            if image_meta is not None and image_meta.img_type in combinable:
                 matching_set = SetBuilder.find_matching_set(image_meta, image.file.path, image.file.root.get_id())
                 if matching_set is None:
                     matching_set = SetBuilder.create_set(image_meta, image.file.path, image.file.root.get_id())
@@ -43,12 +44,12 @@ class SetBuilder:
                          ImageSet.offset == image_meta.offset,
                          ImageSet.telescope == image_meta.telescope,
                          ImageSet.gain == image_meta.gain]
-        if image_meta.camera_temperature is not None:
+        if image_meta.set_temperature is not None:
             where_clauses.append(
-                ImageSet.camera_temperature.between(image_meta.camera_temperature - 1,
-                                                    image_meta.camera_temperature + 1))
+                ImageSet.set_temperature.between(image_meta.set_temperature - Config.TEMP_DELTA,
+                                                 image_meta.set_temperature + Config.TEMP_DELTA))
         else:
-            where_clauses.append(ImageSet.camera_temperature.is_null())
+            where_clauses.append(ImageSet.set_temperature.is_null())
 
         matching_set = ImageSet.select().where(*where_clauses).get_or_none()
         return matching_set
@@ -67,7 +68,7 @@ class SetBuilder:
                                img_type=image_meta.img_type.name,
                                exposure=image_meta.exposure,
                                camera_name=image_meta.camera_name,
-                               camera_temperature=image_meta.camera_temperature,
+                               set_temperature=image_meta.set_temperature,
                                object_name=image_meta.object_name,
                                filter=image_meta.filter,
                                xbin=image_meta.xbin,

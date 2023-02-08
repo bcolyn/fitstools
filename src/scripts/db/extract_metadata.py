@@ -26,10 +26,8 @@ def analyze(file: File):
     return images, meta
 
 
-def main():
+def main(database="prod.db"):
     logzero.loglevel(logzero.INFO)
-
-    database = "test_min.db"
 
     data_storage = DataStorage()
     data_storage.open(database)

@@ -1,6 +1,8 @@
 from datetime import datetime, date, timedelta
 from enum import Enum, auto
 
+from fitstools.config import Config
+
 
 class ImageType(Enum):
     UNKNOWN = auto()
@@ -19,7 +21,8 @@ class ImageType(Enum):
 class NormalizedImageMeta:
     img_type: ImageType = ImageType.UNKNOWN
     exposure: float = None
-    camera_temperature: float = None
+    actual_temperature: float = None
+    set_temperature: float = None
     camera_name: str = None
     object_name: str = None
     filter: str = None
@@ -40,7 +43,12 @@ class NormalizedImageMeta:
         # since we group images also by software, this isn't much of a problem (they all have it or none have it) but
         # it is more logical to use the local date time to determine night/day (esp for those far from UTC)
         # in the future we may be able to determine tz offset from GPS coords
-        reference_date = self.datetime_local if self.datetime_local is not None else self.datetime_utc
+        reference_date = None
+        if self.datetime_local is not None:
+            reference_date = self.datetime_local
+        elif self.datetime_utc is not None:
+            reference_date = self.datetime_utc - timedelta(hours=Config.TZ_OFFSET)
+
         if reference_date is not None:
             if reference_date.hour < 12:  # before noon, morning hours, so we take the day before
                 return reference_date.date() - timedelta(days=1)
